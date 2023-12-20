@@ -16,7 +16,7 @@ namespace ProServ_ClubCore_Server_API.Models
 
         [Required(ErrorMessage = "Confirm Password is required")]
         [Compare("Password", ErrorMessage = "Password and Confirmation Password must match.")]
-        public string ConfirmPassword { get; set; }
+        public string ConfirmPassword { get; set; } 
 
         public RegisterModel()
         {

@@ -20,18 +20,28 @@ public class AuthController : ControllerBase
         _signInManager = signInManager;
     }
 
-    [HttpGet(Name = "Login")]
+    [HttpPost("Login")]
     public async Task<IActionResult> Login(LoginModel loginModel)
     {
         return Ok();
     }
 
     //Method to take in new users. This will not be used for mass registering new users such as staff adding athlete/student accounts in mass quantities.
-    [HttpPost(Name = "Register")]
-    public async Task<IActionResult> Register(RegisterModel loginModel)
+    [HttpPost("Signup")]
+    public async Task<IActionResult> Signup(RegisterModel loginModel)
     {
         try
         {
+            //check is user exists under email
+            var userExists = await _userManager.FindByEmailAsync(loginModel.Email);
+
+            if (userExists != null)
+            {
+                //return 409 conflict
+                return Conflict("User already exists");
+            }
+
+            //create new user
             var user = new IdentityUser
             {
                 UserName = loginModel.Email + "-NewUser",
@@ -48,7 +58,7 @@ public class AuthController : ControllerBase
             {
                 await _signInManager.SignInAsync(user, isPersistent: true); // isPersistent determines if the cookie is persistent or session-based
 
-                return RedirectToAction("Index", "Home");
+                return Ok();
             }
             
         }

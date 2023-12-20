@@ -24,8 +24,19 @@ builder.Services.AddDbContextFactory<ProServDbContext>(options =>
                 errorCodesToAdd: null);
         }));
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("MyAllowSpecificOrigins",
+    builder =>
+    {
+        builder.WithOrigins("http://localhost:5173")
+               .AllowAnyHeader()
+               .AllowAnyMethod();
+    });
+});
 
-
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
 
 
 builder.Services.AddDefaultIdentity<IdentityUser>(options =>
@@ -46,15 +57,13 @@ builder.Services.AddAuthentication(options =>
 })
 .AddCookie(options =>
 {
-    options.LoginPath = "api/auth/login"; // Your login path
+    options.LoginPath = "/api/auth/login"; // Your login path
     options.ExpireTimeSpan = TimeSpan.FromDays(30); // Set cookie expiration
     // other options as needed
 });
 
 
 var app = builder.Build();
-
-
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -69,6 +78,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+app.UseCors("MyAllowSpecificOrigins");
 
 app.UseHttpsRedirection();
 
