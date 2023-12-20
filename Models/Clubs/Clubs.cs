@@ -26,6 +26,9 @@ namespace ProServ_ClubCore_Server_API.Models
         [MaxLength(2)]
         public string Club_State { get; set; }
 
+        [MaxLength(6)]
+        public string Club_Join_Code { get; set; }
+
         public int User_Count { get; set; }
 
         public DateTime Club_Date_Joined { get; set; }
