@@ -21,11 +21,6 @@ namespace ProServ_ClubCore_Server_API.Models
         [MaxLength(450)]
         public string Club_ID { get; set; }
 
-        public virtual Athletes? Athlete { get; set; }
-        public virtual Coaches? Coach { get; set; }
-
-
-
         public Users()
         {
         }

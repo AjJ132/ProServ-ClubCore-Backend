@@ -32,49 +32,51 @@ public class AuthController : ControllerBase
     }
 
     //Method to take in new users. This will not be used for mass registering new users such as staff adding athlete/student accounts in mass quantities.
-    [HttpPost("Signup")]
-    public async Task<IActionResult> Signup(RegisterModel loginModel)
-    {
-        try
+        [HttpPost("Signup")]
+        public async Task<IActionResult> Signup(RegisterModel loginModel)
         {
-            //check is user exists under email
-            var userExists = await _userManager.FindByEmailAsync(loginModel.Email);
-
-            if (userExists != null)
+            try
             {
-                //return 409 conflict
-                return Conflict("User already exists");
-            }
+                //check is user exists under email
+                var userExists = await _userManager.FindByEmailAsync(loginModel.Email);
 
-            //create new user
-            var user = new IdentityUser
-            {
-                UserName = loginModel.Email + "-NewUser",
-                Email = loginModel.Email
-            };
+                if (userExists != null)
+                {
+                    //return 409 conflict
+                    return Conflict("User already exists");
+                }
 
-            var result = await _userManager.CreateAsync(user, loginModel.Password);
+                //create new user
+                var user = new IdentityUser
+                {
+                    UserName = loginModel.Email + "-NewUser",
+                    Email = loginModel.Email
+                };
 
-            if (!result.Succeeded)
-            {
-                return BadRequest(result.Errors);
-            }
-            else
-            {
-                await _signInManager.SignInAsync(user, isPersistent: true); // isPersistent determines if the cookie is persistent or session-based
+                var result = await _userManager.CreateAsync(user, loginModel.Password);
 
-                return Ok();
-            }
+                if (!result.Succeeded)
+                {
+                    return BadRequest(result.Errors);
+                }
+                else
+                {
+                    await _signInManager.SignInAsync(user, isPersistent: true); // isPersistent determines if the cookie is persistent or session-based
+
+                    return Ok();
+                }
             
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine(ex.Message);
+                Console.WriteLine(ex.Message);
+                return StatusCode(500, "Internal server error");
+            }
         }
-        catch (Exception ex)
-        {
-            Debug.WriteLine(ex.Message);
-            Console.WriteLine(ex.Message);
-            return StatusCode(500, "Internal server error");
-        }
-    }
 
+    //Method to take in new users names and team codes if they have one
+    [HttpPost("update-user-info")]
     public async Task<IActionResult> SaveNames(MissingNames namesToUpdate)
     {
         try
@@ -95,7 +97,7 @@ public class AuthController : ControllerBase
                 First_Name = namesToUpdate.FirstName,
                 Last_Name = namesToUpdate.LastName,
                 User_Type = 1,
-                Date_Joined = DateTime.Now
+                Date_Joined = DateTime.Today.ToUniversalTime()
             };
 
             //check database for club with matching team code
@@ -105,11 +107,12 @@ public class AuthController : ControllerBase
 
                 if (club == null)
                 {
-                    //exit loop
-                    goto ExitLoop;
+                    newUser.Club_ID = "";
                 }
-
-                newUser.Club_ID = club.Club_ID;
+                else
+                {
+                    newUser.Club_ID = club.Club_ID;
+                }
 
                 //add user to database
                 db.Users.Add(newUser);
@@ -117,14 +120,8 @@ public class AuthController : ControllerBase
                 //save changes
                 await db.SaveChangesAsync();
 
-                return Ok();
+                return Ok("User created successfully");
             }
-
-        ExitLoop:;
-            
-
-
-
         }
         catch (Exception ex)
         {
