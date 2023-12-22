@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using ProServ_ClubCore_Server_API.Database;
+using ProServ_ClubCore_Server_API.Controllers;
 
 var builder = WebApplication.CreateBuilder(args);
 var configuration = builder.Configuration;
@@ -100,6 +101,12 @@ if (app.Environment.IsDevelopment())
 
 
 app.UseCors("MyAllowSpecificOrigins");
+
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+};
 
 app.UseHttpsRedirection();
 
