@@ -8901,31 +8901,25 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\aj132\\.nuget\\packages\\": {},
-    "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
+    "/Users/ajjohnson/.nuget/packages/": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "W:\\Projects\\ProServ-ClubCore-Backend\\ProServ-ClubCore-Server-API.csproj",
+      "projectUniqueName": "/Users/ajjohnson/Documents/Code/Project Files/ProServ-ClubCore-Backend/ProServ-ClubCore-Server-API.csproj",
       "projectName": "ProServ-ClubCore-Server-API",
-      "projectPath": "W:\\Projects\\ProServ-ClubCore-Backend\\ProServ-ClubCore-Server-API.csproj",
-      "packagesPath": "C:\\Users\\aj132\\.nuget\\packages\\",
-      "outputPath": "W:\\Projects\\ProServ-ClubCore-Backend\\obj\\",
+      "projectPath": "/Users/ajjohnson/Documents/Code/Project Files/ProServ-ClubCore-Backend/ProServ-ClubCore-Server-API.csproj",
+      "packagesPath": "/Users/ajjohnson/.nuget/packages/",
+      "outputPath": "/Users/ajjohnson/Documents/Code/Project Files/ProServ-ClubCore-Backend/obj/",
       "projectStyle": "PackageReference",
-      "fallbackFolders": [
-        "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
-      ],
       "configFilePaths": [
-        "C:\\Users\\aj132\\AppData\\Roaming\\NuGet\\NuGet.Config",
-        "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
-        "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+        "/Users/ajjohnson/.nuget/NuGet/NuGet.Config"
       ],
       "originalTargetFrameworks": [
         "net8.0"
       ],
       "sources": {
-        "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
+        "/usr/local/share/dotnet/library-packs": {},
         "https://api.nuget.org/v3/index.json": {}
       },
       "frameworks": {
@@ -8938,9 +8932,6 @@
         "warnAsError": [
           "NU1605"
         ]
-      },
-      "restoreAuditProperties": {
-        "enableAudit": "default"
       }
     },
     "frameworks": {
@@ -9007,7 +8998,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.100/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/8.0.100/PortableRuntimeIdentifierGraph.json"
       }
     }
   }
