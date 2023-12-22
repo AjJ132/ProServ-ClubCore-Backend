@@ -87,5 +87,49 @@ namespace ProServ_ClubCore_Server_API.Controllers
                 return StatusCode(500, e.Message);
             }
         }
+
+        [HttpPut("update-users-names")]
+        [Authorize]
+        public async Task<IActionResult> UpdateUsersNames([FromBody] User_DTO user)
+        {
+            try
+            {
+                //find user by email
+                var identityUser = await _userManager.GetUserAsync(User);
+
+                if (identityUser == null)
+                {
+                    //return 400 bad request
+                    return BadRequest("User does not exist");
+                }
+
+                //check database for user with matching user id
+                using (var db = _contextFactory.CreateDbContext())
+                {
+                    var userToUpdate = await db.Users
+                        .Where(u => u.User_ID == identityUser.Id)
+                        .FirstOrDefaultAsync();
+
+                    if (userToUpdate == null)
+                    {
+                        //return 400 bad request
+                        return BadRequest("User does not exist");
+                    }
+
+                    userToUpdate.First_Name = user.First_Name;
+                    userToUpdate.Last_Name = user.Last_Name;
+
+                    await db.SaveChangesAsync();
+
+                    //return user info
+                    return Ok();
+                }
+            }
+            catch (Exception e)
+            {
+                //return 500 internal server error
+                return StatusCode(500, e.Message);
+            }
+        }
     }
 }
