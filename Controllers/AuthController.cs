@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -11,7 +12,7 @@ using RegisterModel = ProServ_ClubCore_Server_API.Models.RegisterModel;
 namespace ProServ_University_Server_API.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("[controller]")]
 public class AuthController : ControllerBase
 {
     private readonly UserManager<IdentityUser> _userManager;
@@ -24,56 +25,6 @@ public class AuthController : ControllerBase
         _signInManager = signInManager;
         _contextFactory = contextFactory;
     }
-
-    [HttpPost("Login")]
-    public async Task<IActionResult> Login(LoginModel loginModel)
-    {
-        return Ok();
-    }
-
-    //Method to take in new users. This will not be used for mass registering new users such as staff adding athlete/student accounts in mass quantities.
-        [HttpPost("Signup")]
-        public async Task<IActionResult> Signup(RegisterModel loginModel)
-        {
-            try
-            {
-                //check is user exists under email
-                var userExists = await _userManager.FindByEmailAsync(loginModel.Email);
-
-                if (userExists != null)
-                {
-                    //return 409 conflict
-                    return Conflict("User already exists");
-                }
-
-                //create new user
-                var user = new IdentityUser
-                {
-                    UserName = loginModel.Email + "-NewUser",
-                    Email = loginModel.Email
-                };
-
-                var result = await _userManager.CreateAsync(user, loginModel.Password);
-
-                if (!result.Succeeded)
-                {
-                    return BadRequest(result.Errors);
-                }
-                else
-                {
-                    await _signInManager.SignInAsync(user, isPersistent: true); // isPersistent determines if the cookie is persistent or session-based
-
-                    return Ok();
-                }
-            
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine(ex.Message);
-                Console.WriteLine(ex.Message);
-                return StatusCode(500, "Internal server error");
-            }
-        }
 
     //Method to take in new users names and team codes if they have one
     [HttpPost("update-user-info")]
@@ -131,10 +82,27 @@ public class AuthController : ControllerBase
         }
     }
 
-    [HttpPost(Name = "Logout")]
-    public async Task<IActionResult> Logout(LoginModel loginModel)
+    [HttpGet("validate-session")]
+    [Authorize]
+    public async Task<IActionResult> ValidateSession()
     {
-        return Ok();
+        try
+        {
+            return Ok();
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine(ex.Message);
+            Console.WriteLine(ex.Message);
+            return StatusCode(500, "Internal server error");
+        }
+    }
+
+    [HttpGet("test-api")]
+    [Authorize]
+    public async Task<IActionResult> TestApi()
+    {
+        return Ok("This is an authorization test");
     }
 }
 

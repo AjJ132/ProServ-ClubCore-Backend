@@ -15,7 +15,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("ProServ-ClubCore-Server-API")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+5c1efee0ba372546663cb5608fbb2ecf1e4161e1")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+3237d9c4a84e3394973ceb3fcbf9c01505ebc6e3")]
 [assembly: System.Reflection.AssemblyProductAttribute("ProServ-ClubCore-Server-API")]
 [assembly: System.Reflection.AssemblyTitleAttribute("ProServ-ClubCore-Server-API")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
