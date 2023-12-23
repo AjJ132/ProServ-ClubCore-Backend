@@ -20,6 +20,80 @@ namespace ProServ_ClubCore_Server_API.Controllers
             _contextFactory = contextFactory;
         }
 
+        [HttpGet("get-team-info")]
+        [Authorize]
+        public async Task<IActionResult> GetTeamInfo()
+        {
+            try
+            {
+                var identUser = await _userManager.GetUserAsync(User);
+
+                if(identUser == null)
+                {
+                    return Unauthorized("User does not exist");
+                }
+
+                using(var db = _contextFactory.CreateDbContext())
+                {
+                    var user = await db.Users.FirstOrDefaultAsync(u => u.User_ID == identUser.Id);
+                    var team = await db.Teams.FirstOrDefaultAsync(t => t.Team_ID == user.Team_ID);
+
+                    if(team == null)
+                    {
+                        return BadRequest("Team does not exist");
+                    }
+
+                    Team_Lookup_DTO teamInfo = new Team_Lookup_DTO
+                    {
+                        Team_Name = team.Team_Name,
+                        Team_Location = team.Team_City + ", " + team.Team_State
+                    };
+
+                    return Ok(teamInfo);
+                }
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex}");
+            }
+        }
+
+        [HttpGet("get-team-location")]
+        [Authorize]
+        public async Task<IActionResult> GetTeamLocation()
+        {
+            try
+            {
+                var identUser = await _userManager.GetUserAsync(User);
+
+                if(identUser == null)
+                {
+                    return Unauthorized("User does not exist");
+                }
+
+                using(var db = _contextFactory.CreateDbContext())
+                {
+                    var user = await db.Users.FirstOrDefaultAsync(u => u.User_ID == identUser.Id);
+                    var team = await db.Teams.FirstOrDefaultAsync(t => t.Team_ID == user.Team_ID);
+
+                    if(team == null)
+                    {
+                        return BadRequest("Team does not exist");
+                    }
+
+                    Team_Lookup_DTO teamInfo = new Team_Lookup_DTO
+                    {
+                        Team_Location = team.Team_City + ", " + team.Team_State
+                    };
+
+                    return Ok(teamInfo);
+                }
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex}");
+            }
+        }   
 
         [HttpGet("team-lookup")]
         [Authorize]
@@ -76,12 +150,12 @@ namespace ProServ_ClubCore_Server_API.Controllers
 
                     var userToUpdate = await db.Users.FirstOrDefaultAsync(u => u.User_ID == user.Id);
 
-                    if(userToUpdate != null)
+                    if(userToUpdate == null)
                     {
-                        return BadRequest("User is already on a team");
+                        return BadRequest("could not find user. ERROR 3000!!");
                     }
 
-                    userToUpdate.Club_ID = team.Team_ID;
+                    userToUpdate.Team_ID = team.Team_ID;
 
                     await db.SaveChangesAsync();
 
@@ -94,7 +168,6 @@ namespace ProServ_ClubCore_Server_API.Controllers
             }
         }
 
-
-    
+        
     }
 }

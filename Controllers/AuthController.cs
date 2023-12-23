@@ -58,11 +58,11 @@ public class AuthController : ControllerBase
 
                 if (club == null)
                 {
-                    newUser.Club_ID = "";
+                    newUser.Team_ID = "";
                 }
                 else
                 {
-                    newUser.Club_ID = club.Team_ID;
+                    newUser.Team_ID = club.Team_ID;
                 }
 
                 //add user to database

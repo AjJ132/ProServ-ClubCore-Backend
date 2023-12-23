@@ -39,6 +39,7 @@ namespace ProServ_ClubCore_Server_API.Controllers
                 //check database for user with matching user id
                 using (var db = _contextFactory.CreateDbContext())
                 {
+                    var teamID = "";
                     #pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
                     User_DTO userInfo = await db.Users
                         .Where(u => u.User_ID == user.Id)
@@ -46,8 +47,8 @@ namespace ProServ_ClubCore_Server_API.Controllers
                         {
                             First_Name = u.First_Name,
                             Last_Name = u.Last_Name,
-                            Email = user.Email, 
-                            Team_ID = u.Club_ID
+                            Email = user.Email,
+                            isInTeam = u.Team_ID != "",
                         })
                         .FirstOrDefaultAsync();
                     #pragma warning restore CS8600 // Converting null literal or possible null value to non-nullable type.
@@ -58,18 +59,28 @@ namespace ProServ_ClubCore_Server_API.Controllers
                         return BadRequest("User does not exist");
                     }
 
-                    if (userInfo.Team_ID != "")
+                    if (userInfo.isInTeam)
                     {
-                        #pragma warning disable CS8601 // Possible null reference assignment.
-                        userInfo.Team_Name = await db.Teams
-                            .Where(c => c.Team_ID == userInfo.Team_ID)
-                            .Select(c => c.Team_Name)
+                        teamID = await db.Users
+                            .Where(u => u.User_ID == user.Id)
+                            .Select(u => u.Team_ID)
                             .FirstOrDefaultAsync();
-                        #pragma warning restore CS8601 // Possible null reference assignment.
 
-                        if (userInfo.Team_Name == null)
+                        if (!string.IsNullOrEmpty(teamID))
                         {
-                            userInfo.Team_Name = "";
+                            #pragma warning disable CS8601 // Possible null reference assignment.
+                            userInfo.Team_Name = await db.Teams
+                                .Where(c => c.Team_ID.Equals(teamID))
+                                .Select(c => c.Team_Name)
+                                .FirstOrDefaultAsync();
+                            #pragma warning restore CS8601 // Possible null reference assignment.
+
+                            if (userInfo.Team_Name == null)
+                            {
+                                userInfo.Team_Name = "";
+                            }
+
+                            teamID = null;
                         }
                     }
                     else
