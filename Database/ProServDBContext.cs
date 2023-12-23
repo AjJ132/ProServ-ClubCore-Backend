@@ -17,7 +17,7 @@ namespace ProServ_ClubCore_Server_API.Database
         //User dbsets
         public virtual DbSet<Users> Users { get; set; }
         //Clubs dbsets
-        public virtual DbSet<Clubs> Clubs { get; set; }
+        public virtual DbSet<Teams> Teams { get; set; }
 
         //Utilities dbsets
         //public virtual DbSet<UserTeamJunction> UserTeamJunctions { get; set; }

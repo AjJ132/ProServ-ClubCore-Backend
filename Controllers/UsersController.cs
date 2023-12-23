@@ -47,7 +47,7 @@ namespace ProServ_ClubCore_Server_API.Controllers
                             First_Name = u.First_Name,
                             Last_Name = u.Last_Name,
                             Email = user.Email, 
-                            Club_ID = u.Club_ID
+                            Team_ID = u.Club_ID
                         })
                         .FirstOrDefaultAsync();
                     #pragma warning restore CS8600 // Converting null literal or possible null value to non-nullable type.
@@ -58,23 +58,23 @@ namespace ProServ_ClubCore_Server_API.Controllers
                         return BadRequest("User does not exist");
                     }
 
-                    if (userInfo.Club_ID != "")
+                    if (userInfo.Team_ID != "")
                     {
                         #pragma warning disable CS8601 // Possible null reference assignment.
-                        userInfo.Club_Name = await db.Clubs
-                            .Where(c => c.Club_ID == userInfo.Club_ID)
-                            .Select(c => c.Club_Name)
+                        userInfo.Team_Name = await db.Teams
+                            .Where(c => c.Team_ID == userInfo.Team_ID)
+                            .Select(c => c.Team_Name)
                             .FirstOrDefaultAsync();
                         #pragma warning restore CS8601 // Possible null reference assignment.
 
-                        if (userInfo.Club_Name == null)
+                        if (userInfo.Team_Name == null)
                         {
-                            userInfo.Club_Name = "";
+                            userInfo.Team_Name = "";
                         }
                     }
                     else
                     {
-                        userInfo.Club_Name = "";
+                        userInfo.Team_Name = "";
                     }
 
                     //return user info

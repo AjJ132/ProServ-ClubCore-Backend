@@ -54,7 +54,7 @@ public class AuthController : ControllerBase
             //check database for club with matching team code
             using (var db = _contextFactory.CreateDbContext())
             {
-                var club = await db.Clubs.FirstOrDefaultAsync(c => c.Club_Join_Code == namesToUpdate.TeamCode);
+                var club = await db.Teams.FirstOrDefaultAsync(c => c.Team_Join_Code == namesToUpdate.TeamCode);
 
                 if (club == null)
                 {
@@ -62,7 +62,7 @@ public class AuthController : ControllerBase
                 }
                 else
                 {
-                    newUser.Club_ID = club.Club_ID;
+                    newUser.Club_ID = club.Team_ID;
                 }
 
                 //add user to database
