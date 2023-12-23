@@ -19,7 +19,7 @@ namespace ProServ_ClubCore_Server_API.Models
         public DateTime Date_Joined { get; set; }
 
         [MaxLength(450)]
-        public string Club_ID { get; set; }
+        public string Team_ID { get; set; }
 
         public Users()
         {

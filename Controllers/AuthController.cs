@@ -83,18 +83,40 @@ public class AuthController : ControllerBase
     }
 
     [HttpGet("validate-session")]
-    [Authorize]
     public async Task<IActionResult> ValidateSession()
     {
         try
         {
-            return Ok();
+            //find user by email
+            var user = await _userManager.GetUserAsync(User);
+
+            if (user == null)
+            {
+                //return 401 unauthorized
+                return Unauthorized();
+            }
+
+            //check database for user with matching user id
+            using (var db = _contextFactory.CreateDbContext())
+            {
+                var userToUpdate = await db.Users
+                    .Where(u => u.User_ID == user.Id)
+                    .FirstOrDefaultAsync();
+
+                if (userToUpdate == null)
+                {
+                    //return 400 bad request
+                    return BadRequest("User does not exist");
+                }
+
+                //return user info
+                return Ok(userToUpdate);
+            }
         }
-        catch (Exception ex)
+        catch (Exception e)
         {
-            Debug.WriteLine(ex.Message);
-            Console.WriteLine(ex.Message);
-            return StatusCode(500, "Internal server error");
+            //return 500 internal server error
+            return StatusCode(500, e.Message);
         }
     }
 

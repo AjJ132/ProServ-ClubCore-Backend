@@ -29,11 +29,12 @@ namespace ProServ_ClubCore_Server_API.Controllers
             {
                 using(var db = _contextFactory.CreateDbContext())
                 {
-                    Team_Code_DTO team = await db.Teams
+                    Team_Lookup_DTO team = await db.Teams
                         .Where(t => t.Team_Join_Code == team_code.Team_Join_Code)
-                        .Select(t => new Team_Code_DTO
+                        .Select(t => new Team_Lookup_DTO
                         {
-                            Team_Join_Code = t.Team_Join_Code
+                            Team_Name = t.Team_Name,
+                            Team_Location = t.Team_City + ", " + t.Team_State
                         })
                         .FirstOrDefaultAsync();
 
@@ -49,9 +50,51 @@ namespace ProServ_ClubCore_Server_API.Controllers
             {
                 return StatusCode(500, $"Internal server error: {ex}");
             }
-        }   
-    
-    
+        }
+
+        [HttpPost("join-team")]
+        [Authorize]
+        public async Task<IActionResult> JoinTeam([FromQuery] Team_Code_DTO team_code)
+        {
+            try
+            {
+                using(var db = _contextFactory.CreateDbContext())
+                {
+                    var user = await _userManager.GetUserAsync(User);
+
+                    if(user == null)
+                    {
+                        return Unauthorized("User does not exist");
+                    }
+
+                    var team = await db.Teams.FirstOrDefaultAsync(t => t.Team_Join_Code == team_code.Team_Join_Code);
+
+                    if(team == null)
+                    {
+                        return NotFound("Team does not exist");
+                    }
+
+                    var userToUpdate = await db.Users.FirstOrDefaultAsync(u => u.User_ID == user.Id);
+
+                    if(userToUpdate != null)
+                    {
+                        return BadRequest("User is already on a team");
+                    }
+
+                    userToUpdate.Club_ID = team.Team_ID;
+
+                    await db.SaveChangesAsync();
+
+                    return Ok("User joined team");
+                }
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex}");
+            }
+        }
+
+
     
     }
 }
