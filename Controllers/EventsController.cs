@@ -132,6 +132,7 @@ namespace ProServ_ClubCore_Server_API.Controllers
 
                     Calendar_Event_SA_DTO newEventDTO = new Calendar_Event_SA_DTO
                     {
+                        Event_ID = newEvent.Event_ID.ToString(),
                         title = newEvent.Title,
                         description = newEvent.Description,
                         startDate = newEvent.StartDate,
