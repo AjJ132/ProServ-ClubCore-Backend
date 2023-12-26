@@ -23,7 +23,7 @@ namespace ProServ_ClubCore_Server_API.Controllers
 
         [HttpGet("get-my-events")]
         [Authorize]
-        public async Task<IActionResult> GetMyEvents([FromQuery] DateTime date, [FromQuery] string dateOption)
+        public async Task<IActionResult> GetMyEvents([FromQuery] DateTimeOffset date, [FromQuery] string dateOption)
         {
             try
             {
@@ -55,35 +55,53 @@ namespace ProServ_ClubCore_Server_API.Controllers
                     //secondary try/catch to potentially save request from failing 
                     try
                     {
+                        startDate = startDate.ToUniversalTime();
+                        endDate = endDate.ToUniversalTime();
+
                         var events = await db.CalendarEvents
-                        .Where(e => e.User_ID == identUser.Id &&
-                                    e.StartDate >= startDate &&
-                                    e.EndDate <= endDate)
-                        .Select(e => new Calendar_Event_SA_DTO
-                        {
-                            title = e.Title,
-                            description = e.Description,
-                            startDate = e.StartDate,
-                            endDate = e.EndDate,
-                            color = e.Color
-                        })
-                        .ToListAsync();
+                            .Where(e => e.User_ID == identUser.Id &&
+                                        e.StartDate >= startDate &&
+                                        e.EndDate <= endDate)
+                            .Select(e => new Calendar_Event_SA_DTO
+                            {
+                                title = e.Title,
+                                description = e.Description,
+                                startDate = e.StartDate,
+                                endDate = e.EndDate,
+                                color = e.Color,
+                                Event_ID = e.Event_ID.ToString(),
+                                assignedBy = e.Creator_ID,
+                                canUpdate = e.Creator_ID == identUser.Id,
+                                dateCreated = e.Date_Created
+                            })
+                            .ToListAsync();
 
-                        var eventsDTO = events.Select(e => new Calendar_Event_SA_DTO
-                        {
-                            title = e.title,
-                            description = e.description,
-                            startDate = e.startDate,
-                            endDate = e.endDate,
-                            color = e.color
-                        }).ToList();
+                        //sort events by start date and time
+                        events.Sort((e1, e2) => e1.startDate.CompareTo(e2.startDate));
 
-                        return Ok(eventsDTO);
+                        //foreach event use the assignedBy field to get the name of the user who assigned the event
+                        foreach (var e in events)
+                        {
+                            var assignedByUser = await db.Users.FirstOrDefaultAsync(u => u.User_ID == e.assignedBy);
+                            if (assignedByUser != null)
+                            {
+                                e.assignedBy = assignedByUser.First_Name + " " + assignedByUser.Last_Name;
+                            }
+                            else
+                            {
+                                e.assignedBy = "Unknown";
+                            }
+                        }   
+
+                        return Ok(events);
                     }
                     catch (Exception ex)
                     {
                         //generate empty list of events
                         var eventsDTO = new List<Calendar_Event_SA_DTO>();
+
+                        //print to console error message
+                        Console.WriteLine(ex.Message);
 
                         return Ok(eventsDTO);
                     }
@@ -95,7 +113,7 @@ namespace ProServ_ClubCore_Server_API.Controllers
             }
         }
 
-        [HttpPost("sa-add-event")]
+        [HttpPost("sa-add-event")] //for users assigning stuff to themselves. Will be mostly athletes and not coaches
         [Authorize]
         public async Task<IActionResult> AddCalendarEvent_SA(Calendar_Event_SA_DTO calendarEvent)
         {
@@ -124,7 +142,9 @@ namespace ProServ_ClubCore_Server_API.Controllers
                         StartDate = calendarEvent.startDate,
                         EndDate = calendarEvent.endDate,
                         Color = calendarEvent.color,
-                        User_ID = user.User_ID
+                        User_ID = user.User_ID,
+                        Creator_ID = user.User_ID,
+                        Date_Created = DateTimeOffset.UtcNow
                     };
 
                     await db.CalendarEvents.AddAsync(newEvent);
@@ -137,7 +157,10 @@ namespace ProServ_ClubCore_Server_API.Controllers
                         description = newEvent.Description,
                         startDate = newEvent.StartDate,
                         endDate = newEvent.EndDate,
-                        color = newEvent.Color
+                        color = newEvent.Color,
+                        assignedBy = user.First_Name + " " + user.Last_Name,
+                        canUpdate = true,
+                        dateCreated = newEvent.Date_Created
                     };
 
                     return Ok(newEventDTO);

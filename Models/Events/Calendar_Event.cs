@@ -20,6 +20,10 @@ namespace ProServ_ClubCore_Server_API.Models
         public string Color { get; set; } //Will be in the form of a hex. Can be 6 or 8 characters long.8 For the alpha channel.
         [Required, MaxLength(450)]
         public string User_ID { get; set; } //450 char user id from identity user management
+        [Required, MaxLength(450)]
+        public string Creator_ID { get; set; } //450 char user id from identity user management 
+        [Required]
+        public DateTimeOffset Date_Created { get; set; }
 
         public Calendar_Event()
         {

@@ -9,6 +9,9 @@
         public DateTimeOffset startDate { get; set; }
         public DateTimeOffset endDate { get; set; }
         public string color { get; set; }
+        public string assignedBy { get; set; } //will contain user's name
+        public bool canUpdate { get; set; } //will be true if the user can update the event
+        public DateTimeOffset dateCreated { get; set; }
     }
 
     public class Calendar_Event_MA_DTO
