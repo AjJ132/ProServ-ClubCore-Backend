@@ -23,6 +23,13 @@ namespace ProServ_ClubCore_Server_API.Database
         //Utilities dbsets
         //public virtual DbSet<UserTeamJunction> UserTeamJunctions { get; set; }
 
+        //Messaging dbsets
+        public virtual DbSet<DirectConversation> DirectConversation { get; set; }
+        public virtual DbSet<DirectMessage> DirectMessages { get; set; }
+        public virtual DbSet<GroupConversation> GroupConversations { get; set; }
+        public virtual DbSet<ConversationUsers> ConversationUsers { get; set; }
+        public virtual DbSet<ConversationMessage> ConversationMessages { get; set; }
+
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
