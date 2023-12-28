@@ -1,13 +1,11 @@
-using System.Diagnostics;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ProServ_ClubCore_Server_API.Database;
+using ProServ_ClubCore_Server_API.DTO;
 using ProServ_ClubCore_Server_API.Models;
 using ProServ_ClubCore_Server_API.Models.Util;
-using LoginModel = ProServ_ClubCore_Server_API.Models.LoginModel;
-using RegisterModel = ProServ_ClubCore_Server_API.Models.RegisterModel;
 
 namespace ProServ_University_Server_API.Controllers;
 
@@ -25,6 +23,9 @@ public class AuthController : ControllerBase
         _signInManager = signInManager;
         _contextFactory = contextFactory;
     }
+
+    
+
 
     //Method to take in new users names and team codes if they have one
     [HttpPost("update-user-info")]
@@ -120,11 +121,5 @@ public class AuthController : ControllerBase
         }
     }
 
-    [HttpGet("test-api")]
-    [Authorize]
-    public async Task<IActionResult> TestApi()
-    {
-        return Ok("This is an authorization test");
-    }
 }
 
