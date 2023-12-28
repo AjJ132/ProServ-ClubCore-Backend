@@ -7,7 +7,7 @@ namespace ProServ_ClubCore_Server_API.Models
     public class Teams
     {
         [Key, MaxLength(450)]
-        public string Team_ID { get; set; }
+        public Guid Team_ID { get; set; }
 
         [Required, MaxLength(450)]
         public string Owner_ID { get; set; }
@@ -31,7 +31,7 @@ namespace ProServ_ClubCore_Server_API.Models
 
         public int User_Count { get; set; }
 
-        public DateTime Team_Date_Joined { get; set; }
+        public DateTimeOffset Team_Date_Joined { get; set; }
 
        
         public Teams()

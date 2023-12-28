@@ -16,10 +16,10 @@ namespace ProServ_ClubCore_Server_API.Models
 
         public int User_Type { get; set; }
 
-        public DateTime Date_Joined { get; set; }
+        public DateTimeOffset Date_Joined { get; set; }
 
         [MaxLength(450)]
-        public string Team_ID { get; set; }
+        public Guid? Team_ID { get; set; }
 
         public Users()
         {

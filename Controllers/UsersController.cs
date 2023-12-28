@@ -39,7 +39,7 @@ namespace ProServ_ClubCore_Server_API.Controllers
                 //check database for user with matching user id
                 using (var db = _contextFactory.CreateDbContext())
                 {
-                    var teamID = "";
+                    var teamID = Guid.Empty;
                     #pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
                     User_DTO userInfo = await db.Users
                         .Where(u => u.User_ID == user.Id)
@@ -48,7 +48,7 @@ namespace ProServ_ClubCore_Server_API.Controllers
                             First_Name = u.First_Name,
                             Last_Name = u.Last_Name,
                             Email = user.Email,
-                            isInTeam = u.Team_ID != "",
+                            isInTeam = u.Team_ID != null
                         })
                         .FirstOrDefaultAsync();
                     #pragma warning restore CS8600 // Converting null literal or possible null value to non-nullable type.
@@ -61,12 +61,12 @@ namespace ProServ_ClubCore_Server_API.Controllers
 
                     if (userInfo.isInTeam)
                     {
-                        teamID = await db.Users
+                        teamID = (Guid)await db.Users
                             .Where(u => u.User_ID == user.Id)
                             .Select(u => u.Team_ID)
                             .FirstOrDefaultAsync();
 
-                        if (!string.IsNullOrEmpty(teamID))
+                        if (teamID != Guid.Empty)
                         {
                             #pragma warning disable CS8601 // Possible null reference assignment.
                             userInfo.Team_Name = await db.Teams
@@ -80,7 +80,6 @@ namespace ProServ_ClubCore_Server_API.Controllers
                                 userInfo.Team_Name = "";
                             }
 
-                            teamID = null;
                         }
                     }
                     else

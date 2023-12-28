@@ -203,13 +203,7 @@ namespace ProServ_ClubCore_Server_API.Controllers
                     await context.SaveChangesAsync();
 
                     //send message to all clients in the conversation
-                    await Clients.Group(conversationID.ToString()).SendAsync("ReceiveMessage", new DirectMessage_DTO
-                    {
-                        Conversation_ID = conversationID,
-                        Sender_ID = currentUser.Id,
-                        Message = message.Message,
-                        Timestamp = DateTimeOffset.UtcNow
-                    });
+                    //TODO send message to WEBSOCKET connections is valid
 
                     return Ok();
                 }

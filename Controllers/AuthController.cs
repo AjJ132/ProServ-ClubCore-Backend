@@ -6,6 +6,7 @@ using ProServ_ClubCore_Server_API.Database;
 using ProServ_ClubCore_Server_API.DTO;
 using ProServ_ClubCore_Server_API.Models;
 using ProServ_ClubCore_Server_API.Models.Util;
+using System.Diagnostics;
 
 namespace ProServ_University_Server_API.Controllers;
 
@@ -59,7 +60,7 @@ public class AuthController : ControllerBase
 
                 if (club == null)
                 {
-                    newUser.Team_ID = "";
+                    newUser.Team_ID = null;
                 }
                 else
                 {
