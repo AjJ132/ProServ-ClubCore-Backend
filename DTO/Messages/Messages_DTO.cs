@@ -1,9 +1,5 @@
 ﻿namespace ProServ_ClubCore_Server_API.DTO
 {
-    public class DirectConversation_DTO
-    {
-        public string User2_ID { get; set; }
-    }
 
     public class DirectMessage_DTO
     {
@@ -13,5 +9,20 @@
         public DateTimeOffset Timestamp { get; set; }
 
         //TODO : Add a property for attachments not sure how I will do this
+    }
+
+    public class DirectConversation_DTO
+    {
+        public string? Conversation_Type { get; set; }
+        public Guid? Conversation_ID { get; set; }
+        public string User2_ID { get; set; }
+        public string? User2_Name { get; set; }
+        public DateTimeOffset? LastMessageTimestamp { get; set; }
+    }
+
+    public class UserLookup_DTO
+    {
+        public string User_ID { get; set; }
+        public string Name { get; set; }
     }
 }
