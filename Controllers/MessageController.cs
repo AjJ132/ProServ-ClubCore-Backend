@@ -37,7 +37,7 @@ namespace ProServ_ClubCore_Server_API.Controllers
 
                     if (conversation.User1_ID != userId && conversation.User2_ID != userId)
                     {
-                        return true;
+                        return false;
                     }
 
                     return true;
@@ -257,9 +257,9 @@ namespace ProServ_ClubCore_Server_API.Controllers
         //get my message threads
 
         //get messages for a direct conversation
-        [HttpGet("{conversationID}/messages")]
+        [HttpGet("Direct/{conversationID}/messages")]
         [Authorize]
-        public async Task<IActionResult> GetMessagesForDirectMessageThread([FromQuery]Guid conversationID, [FromQuery]int pageIndex, [FromQuery] int pageSize = 20)
+        public async Task<IActionResult> GetMessagesForDirectMessageThread([FromQuery]Guid conversationID, [FromQuery]int pageIndex = 1, [FromQuery] int pageSize = 20)
         {
             try
             {
@@ -284,8 +284,9 @@ namespace ProServ_ClubCore_Server_API.Controllers
 
                     var directConversation = await context.DirectConversations.FirstOrDefaultAsync(dc => dc.Conversation_ID == conversationID);
 
-                     //get messages for direct conversation
-                     var messages = await context.DirectMessages.Where(dm => dm.Conversation_ID == conversationID).OrderByDescending(dm => dm.Timestamp).Skip(pageIndex * pageSize).Take(pageSize).ToListAsync();
+                    //get messages for direct conversation
+                    var messages = await context.DirectMessages.Where(dm => dm.Conversation_ID == conversationID).OrderByDescending(dm => dm.Timestamp).Skip(pageIndex * pageSize).Take(pageSize).ToListAsync();
+                    var otherUser = await context.Users.FirstOrDefaultAsync(u => u.User_ID == (directConversation.User1_ID == currentUser.Id ? directConversation.User2_ID : directConversation.User1_ID));
 
                     //convert messages to DTO
                     var messages_DTO = new List<DirectMessage_DTO>();
@@ -295,6 +296,7 @@ namespace ProServ_ClubCore_Server_API.Controllers
                         messages_DTO.Add(new DirectMessage_DTO
                         {
                             Sender_ID = message.Sender_ID,
+                            Sender_Name = otherUser.First_Name + " " + otherUser.Last_Name,
                             Message = message.Message,
                             Timestamp = message.Timestamp
                         });
@@ -311,7 +313,7 @@ namespace ProServ_ClubCore_Server_API.Controllers
 
 
         //send message to a thread
-        [HttpPost("{conversationID}/send-message")]
+        [HttpPost("Direct/{conversationID}/send-message")]
         [Authorize]
         public async Task<IActionResult> SendMessageToDirectThread([FromQuery] Guid conversationID, [FromBody] DirectMessage_DTO message)
         {
