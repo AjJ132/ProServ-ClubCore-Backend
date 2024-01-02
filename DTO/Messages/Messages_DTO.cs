@@ -18,7 +18,7 @@
         public Guid? Conversation_ID { get; set; }
         public string User2_ID { get; set; }
         public string? User2_Name { get; set; }
-        public DateTimeOffset? LastMessageTimestamp { get; set; }
+        public string? LastMessageTimestamp { get; set; }
     }
 
     public class UserLookup_DTO

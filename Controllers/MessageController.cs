@@ -50,6 +50,30 @@ namespace ProServ_ClubCore_Server_API.Controllers
             }
         }
 
+        private string FormatTimestamp(DateTimeOffset timestamp)
+        {
+            var now = DateTime.UtcNow;
+            var today = now.Date;
+            var startOfWeek = today.AddDays(-(int)today.DayOfWeek);
+
+            if (timestamp.Date == today)
+            {
+                // Format as time only for today
+                return timestamp.ToString("hh:mm");
+            }
+            else if (timestamp >= startOfWeek)
+            {
+                // Format as day of the week for dates within this week
+                return timestamp.ToString("dddd");
+            }
+            else
+            {
+                // Format as a full date for older dates
+                return timestamp.ToString("yyyy-MM-dd");
+            }
+        }
+
+
         [HttpGet("get-users-to-message")]
         [Authorize]
         public async Task<IActionResult> GetUsersToMessage()
@@ -178,7 +202,7 @@ namespace ProServ_ClubCore_Server_API.Controllers
                         }
                         else
                         {
-                            dCDTO.LastMessageTimestamp = lastMessage.Timestamp;
+                            dCDTO.LastMessageTimestamp = FormatTimestamp(lastMessage.Timestamp);
                         }
 
                         directConversations_DTO.Add(dCDTO);
@@ -315,7 +339,7 @@ namespace ProServ_ClubCore_Server_API.Controllers
         //send message to a thread
         [HttpPost("Direct/{conversationID}/send-message")]
         [Authorize]
-        public async Task<IActionResult> SendMessageToDirectThread([FromQuery] Guid conversationID, [FromBody] DirectMessage_DTO message)
+        public async Task<IActionResult> SendMessageToDirectThread([FromQuery] Guid conversationID, [FromBody] string message)
         {
             try
             {
@@ -344,7 +368,7 @@ namespace ProServ_ClubCore_Server_API.Controllers
                     {
                         Conversation_ID = conversationID,
                         Sender_ID = currentUser.Id,
-                        Message = message.Message,
+                        Message = message,
                         Timestamp = DateTimeOffset.UtcNow
                     };
 
@@ -352,10 +376,21 @@ namespace ProServ_ClubCore_Server_API.Controllers
                     await context.DirectMessages.AddAsync(newDirectMessage);
                     await context.SaveChangesAsync();
 
+                    var user = await context.Users.FirstOrDefaultAsync(u => u.User_ID == (directConversation.User1_ID == currentUser.Id ? directConversation.User2_ID : directConversation.User1_ID));
+
+                    var newMessage = new DirectMessage_DTO
+                    {
+                        Conversation_ID = conversationID,
+                        Sender_ID = currentUser.Id,
+                        Sender_Name = user.First_Name + " " + user.Last_Name,
+                        Message = message,
+                        Timestamp = newDirectMessage.Timestamp
+                    };
+
                     //send message to all clients in the conversation
                     //TODO send message to WEBSOCKET connections is valid
 
-                    return Ok();
+                    return Ok(newMessage);
                 }
             }
             catch (Exception ex)

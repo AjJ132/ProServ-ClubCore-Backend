@@ -6,6 +6,7 @@ using ProServ_ClubCore_Server_API.Database;
 using ProServ_ClubCore_Server_API.Models.Util;
 using ProServ_ClubCore_Server_API.Models;
 using System.Diagnostics;
+using Microsoft.AspNetCore.Authorization;
 
 namespace ProServ_ClubCore_Server_API.Controllers
 {
@@ -119,7 +120,6 @@ namespace ProServ_ClubCore_Server_API.Controllers
                 return false;
             }
         }
-
 
         private async Task<bool> CreateUsers()
         {
@@ -241,6 +241,36 @@ namespace ProServ_ClubCore_Server_API.Controllers
             catch
             {
                 return false;
+            }
+        }
+
+
+
+        [HttpPost("test-authentication")]
+        [Authorize]
+        public async Task<IActionResult> TestAuthentication()
+        {
+            try
+            {
+                var identUser = await _userManager.GetUserAsync(User);
+
+                if (identUser == null)
+                {
+                    return StatusCode(401, "IdentUser Not Present");
+                }
+
+                var dbUser = await _contextFactory.CreateDbContext().Users.Where(u => u.User_ID == identUser.Id).FirstOrDefaultAsync(); 
+
+                if (dbUser == null)
+                {
+                    return StatusCode(401, "DBUser Not Present");
+                }
+
+                return Ok("Authentication Successful");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, "Internal Server Error");
             }
         }
     }
