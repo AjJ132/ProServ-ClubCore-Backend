@@ -8,6 +8,7 @@
         public string? Sender_Name { get; set; }
         public string Message { get; set; }
         public DateTimeOffset Timestamp { get; set; }
+        public bool? Seen { get; set; }
 
         //TODO : Add a property for attachments not sure how I will do this
     }
@@ -19,6 +20,7 @@
         public string User2_ID { get; set; }
         public string? User2_Name { get; set; }
         public string? LastMessageTimestamp { get; set; }
+        public bool? hasUnreadMessages { get; set; }
     }
 
     public class UserLookup_DTO

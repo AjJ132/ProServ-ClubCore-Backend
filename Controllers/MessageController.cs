@@ -205,6 +205,15 @@ namespace ProServ_ClubCore_Server_API.Controllers
                             dCDTO.LastMessageTimestamp = FormatTimestamp(lastMessage.Timestamp);
                         }
 
+                        if (lastMessage == null)
+                        {
+                            dCDTO.hasUnreadMessages = false;
+                        }
+                        else
+                        {
+                            dCDTO.hasUnreadMessages = lastMessage.Sender_ID != currentUser.Id && !lastMessage.Seen;
+                        }
+
                         directConversations_DTO.Add(dCDTO);
 
                     }
@@ -309,7 +318,8 @@ namespace ProServ_ClubCore_Server_API.Controllers
                     var directConversation = await context.DirectConversations.FirstOrDefaultAsync(dc => dc.Conversation_ID == conversationID);
 
                     //get messages for direct conversation
-                    var messages = await context.DirectMessages.Where(dm => dm.Conversation_ID == conversationID).OrderByDescending(dm => dm.Timestamp).Skip(pageIndex * pageSize).Take(pageSize).ToListAsync();
+                    //var messages = await context.DirectMessages.Where(dm => dm.Conversation_ID == conversationID).OrderByDescending(dm => dm.Timestamp).Skip(pageIndex * pageSize).Take(pageSize).ToListAsync();
+                    var messages = await context.DirectMessages.Where(dm => dm.Conversation_ID == conversationID).OrderByDescending(dm => dm.Timestamp).ToListAsync();
                     var otherUser = await context.Users.FirstOrDefaultAsync(u => u.User_ID == (directConversation.User1_ID == currentUser.Id ? directConversation.User2_ID : directConversation.User1_ID));
 
                     //convert messages to DTO
@@ -319,10 +329,13 @@ namespace ProServ_ClubCore_Server_API.Controllers
                     {
                         messages_DTO.Add(new DirectMessage_DTO
                         {
+                            Conversation_ID = message.Conversation_ID,
                             Sender_ID = message.Sender_ID,
                             Sender_Name = otherUser.First_Name + " " + otherUser.Last_Name,
                             Message = message.Message,
-                            Timestamp = message.Timestamp
+                            Timestamp = message.Timestamp,
+                            Seen = message.Seen
+                            
                         });
                     }
 
@@ -398,7 +411,48 @@ namespace ProServ_ClubCore_Server_API.Controllers
                 return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
             }
         }
-    
-    
+
+        [HttpPut("Direct/{conversation_ID}/mark-as-read")]
+        [Authorize]
+        public async Task<IActionResult> MarkDirectConversationAsRead([FromQuery] Guid conversationID)
+        {
+            try
+            {
+                //get current user
+                var currentUser = await _userManager.GetUserAsync(User);
+
+                if (currentUser == null)
+                {
+                    return Unauthorized("User was not found");
+                }
+
+                //get direct conversation
+                using (var context = _contextFactory.CreateDbContext())
+                {
+                    bool valid = await ValidateUserConversationAccess(conversationID, currentUser.Id);
+
+                    if (!valid)
+                    {
+                        return Unauthorized("You are not part of this direct conversation");
+                    }
+
+                    //get messages for direct conversation
+                    var messages = await context.DirectMessages.Where(dm => dm.Conversation_ID == conversationID && dm.Sender_ID != currentUser.Id && dm.Seen == false).ToListAsync();
+
+                    foreach (var message in messages)
+                    {
+                        message.Seen = true;
+                    }
+
+                    await context.SaveChangesAsync();
+
+                    return Ok();
+                }
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+            }
+        }
     }
 }

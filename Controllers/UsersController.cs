@@ -45,6 +45,7 @@ namespace ProServ_ClubCore_Server_API.Controllers
                         .Where(u => u.User_ID == user.Id)
                         .Select(u => new User_DTO
                         {
+                            User_ID = u.User_ID,
                             First_Name = u.First_Name,
                             Last_Name = u.Last_Name,
                             Email = user.Email,
