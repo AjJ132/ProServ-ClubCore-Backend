@@ -109,17 +109,7 @@ namespace ProServ_ClubCore_Server_API.Controllers
                     var usersInTeam = await context.Users.Where(u => u.Team_ID == currentUserEntity.Team_ID).ToListAsync();
 
                     //remove current user from list
-                    usersInTeam.Remove(currentUserEntity);
-
-                    if(usersInTeam == null)
-                    {
-                        return Ok("");
-                    }
-
-                    if(usersInTeam.Count == 0)
-                    {
-                        return Ok("");
-                    }
+                    usersInTeam.RemoveAll(u => u.User_ID == currentUser.Id);
 
                     //convert users to DTO
                     var usersInTeam_DTO = new List<UserLookup_DTO>();
@@ -253,15 +243,6 @@ namespace ProServ_ClubCore_Server_API.Controllers
                     return BadRequest("User2 was not found");
                 }
 
-                //create new direct conversation
-                var newDC_Entity = new DirectConversation
-                {
-                    Conversation_ID = Guid.NewGuid(),
-                    User1_ID = currentUser.Id,
-                    User2_ID = user2.Id,
-                    Date_Created = DateTimeOffset.UtcNow
-                };
-
                 //save new direct conversation
                 using (var context = _contextFactory.CreateDbContext())
                 {
@@ -270,8 +251,17 @@ namespace ProServ_ClubCore_Server_API.Controllers
 
                     if (existingDC != null)
                     {
-                        return BadRequest("A direct conversation already exists between these two users");
+                        return StatusCode(StatusCodes.Status409Conflict, "DC Already Exists");
                     }
+
+                    //create new direct conversation
+                    var newDC_Entity = new DirectConversation
+                    {
+                        Conversation_ID = Guid.NewGuid(),
+                        User1_ID = currentUser.Id,
+                        User2_ID = user2.Id,
+                        Date_Created = DateTimeOffset.UtcNow
+                    };
 
                     await context.DirectConversations.AddAsync(newDC_Entity);
                     await context.SaveChangesAsync();
