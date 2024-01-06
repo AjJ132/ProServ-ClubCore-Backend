@@ -276,6 +276,38 @@ namespace ProServ_ClubCore_Server_API.Controllers
         }
 
         //create new group message
+        [HttpPost("new-group-message-thread")]
+        [Authorize]
+        public async Task<IActionResult> CreateNewGroupMessageThread([FromBody] NewGroupConversation_DTO newGC_DTO)
+        {
+            try
+            {
+                //get current user
+                var currentUser = await _userManager.GetUserAsync(User);
+                if (currentUser == null)
+                {
+                    return Unauthorized("User was not found");
+                }
+
+
+                //verify users exist
+
+                //verify users are in the same team
+
+                //verify group name is provided
+
+                //create new group conversation
+
+                //grab new conversation ID, apply to ConversationUsers table with users ids
+
+                //return Ok(); 
+                
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+            }
+        }   
 
         //get my message threads
 

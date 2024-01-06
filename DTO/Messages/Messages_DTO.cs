@@ -23,6 +23,14 @@
         public bool? hasUnreadMessages { get; set; }
     }
 
+    public class NewGroupConversation_DTO
+    {
+        public string Creator_ID { get; set; }
+        public string GroupName { get; set; }
+        public string[] User_IDs { get; set; }
+        public bool IsPrivate { get; set; }
+    }
+
     public class UserLookup_DTO
     {
         public string User_ID { get; set; }
