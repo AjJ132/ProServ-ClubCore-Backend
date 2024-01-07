@@ -222,7 +222,7 @@ namespace ProServ_ClubCore_Server_API.Controllers
         }
 
         //create new direct message thread
-        [HttpPost("new-direct-message-thread")]
+        [HttpPost("Direct/new-direct-message-thread")]
         [Authorize]
         public async Task<IActionResult> CreateNewDirectMessageThread([FromBody] DirectConversation_DTO newDC_DTO)
         {
@@ -276,7 +276,7 @@ namespace ProServ_ClubCore_Server_API.Controllers
         }
 
         //create new group message
-        [HttpPost("new-group-message-thread")]
+        [HttpPost("Group/new-group-message-thread")]
         [Authorize]
         public async Task<IActionResult> CreateNewGroupMessageThread([FromBody] NewGroupConversation_DTO newGC_DTO)
         {
@@ -289,19 +289,69 @@ namespace ProServ_ClubCore_Server_API.Controllers
                     return Unauthorized("User was not found");
                 }
 
+                using (var context = _contextFactory.CreateDbContext())
+                {
+                    using (var transaction = context.Database.BeginTransaction()) //using transaction to ensure all changes are rolled back if an error occurs. Incase a group conversation is created but not all users are added
+                    {
+                        try
+                        {
+                            var creator = await context.Users.FirstOrDefaultAsync(u => u.User_ID == currentUser.Id);
+                            if (creator == null)
+                            {
+                                return Unauthorized("User was not found");
+                            }
 
-                //verify users exist
+                            if (newGC_DTO.GroupName == null || newGC_DTO.GroupName == "")
+                            {
+                                return BadRequest("Group name was not provided");
+                            }
 
-                //verify users are in the same team
+                            var newGroupConversation = new GroupConversation
+                            {
+                                Conversation_ID = Guid.NewGuid(),
+                                Title = newGC_DTO.GroupName,
+                                Date_Created = DateTimeOffset.UtcNow,
+                                Creator_ID = currentUser.Id,
+                                Group_Type = 1 // Assuming this is your business logic
+                            };
 
-                //verify group name is provided
+                            await context.GroupConversations.AddAsync(newGroupConversation);
 
-                //create new group conversation
+                            List<ConversationUsers> conversationUsers = new List<ConversationUsers>();
+                            foreach (var userID in newGC_DTO.User_IDs)
+                            {
+                                var user = await context.Users.FirstOrDefaultAsync(u => u.User_ID == userID);
+                                if (user == null)
+                                {
+                                    throw new Exception("User not found in database");
+                                }
 
-                //grab new conversation ID, apply to ConversationUsers table with users ids
+                                if (user.Team_ID != creator.Team_ID)
+                                {
+                                    throw new Exception("User not in the same team as creator");
+                                }
 
-                //return Ok(); 
-                
+                                conversationUsers.Add(new ConversationUsers
+                                {
+                                    Conversation_ID = newGroupConversation.Conversation_ID,
+                                    User_ID = userID
+                                });
+                            }
+
+                            await context.ConversationUsers.AddRangeAsync(conversationUsers);
+                            await context.SaveChangesAsync(); 
+                            await transaction.CommitAsync(); //important to commit changes to database
+
+                            return Ok();
+                        }
+                        catch (Exception ex)
+                        {
+                            await transaction.RollbackAsync(); //important to rollback if exception occurs and remove database clutter
+                            return BadRequest(ex.Message);
+                        }
+                    }
+                }
+
             }
             catch (Exception ex)
             {
