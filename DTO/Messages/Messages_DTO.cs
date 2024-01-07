@@ -31,6 +31,16 @@
         public bool IsPrivate { get; set; }
     }
 
+    public class GroupConversation_DTO
+    {
+        public int? Conversation_Type { get; set; }
+        public Guid? Conversation_ID { get; set; }
+        public string Creator_Name { get; set; }
+        public string GroupName { get; set; }
+        public string? LastMessageTimestamp { get; set; }
+        public bool? hasUnreadMessages { get; set; }
+    }
+
     public class UserLookup_DTO
     {
         public string User_ID { get; set; }

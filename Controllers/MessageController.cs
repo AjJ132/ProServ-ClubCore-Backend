@@ -342,7 +342,17 @@ namespace ProServ_ClubCore_Server_API.Controllers
                             await context.SaveChangesAsync(); 
                             await transaction.CommitAsync(); //important to commit changes to database
 
-                            return Ok();
+                            GroupConversation_DTO groupConversation_DTO = new GroupConversation_DTO
+                            {
+                                Conversation_ID = newGroupConversation.Conversation_ID,
+                                Conversation_Type = 1,
+                                Creator_Name = creator.First_Name + " " + creator.Last_Name,
+                                GroupName = newGroupConversation.Title,
+                                LastMessageTimestamp = null,
+                                hasUnreadMessages = false
+                            };
+
+                            return Ok(groupConversation_DTO);
                         }
                         catch (Exception ex)
                         {
