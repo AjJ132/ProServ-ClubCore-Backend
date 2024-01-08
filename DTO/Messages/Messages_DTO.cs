@@ -1,6 +1,16 @@
 ﻿namespace ProServ_ClubCore_Server_API.DTO
 {
 
+
+    public class UniversalConversations_DTO
+    {
+        public Guid? Conversation_ID { get; set; }
+        public int? Conversation_Type { get; set; } //0 = Direct Message, 1 = Group Conversation
+        public string Conversation_Title { get; set; } //Group Name  or User Name for Direct Messages
+        public string? LastMessageTimestamp { get; set; }
+        public bool? hasUnreadMessages { get; set; }
+    }
+
     public class DirectMessage_DTO
     {
         public Guid? Conversation_ID { get; set; } //nullable because it is not required when sending data to the client //client cant receive messages from more than one conversation at a time/ Will be used when sending messages to the server
@@ -39,6 +49,7 @@
         public string GroupName { get; set; }
         public string? LastMessageTimestamp { get; set; }
         public bool? hasUnreadMessages { get; set; }
+        public Dictionary<string, string>? Users { get; set; }
     }
 
     public class UserLookup_DTO

@@ -2,7 +2,7 @@
 
 namespace ProServ_ClubCore_Server_API.Models
 {
-    public class ConversationMessage
+    public class GroupConversationMessage
     {
         [Key]
         public Guid Message_ID { get; set; }
@@ -14,5 +14,7 @@ namespace ProServ_ClubCore_Server_API.Models
         public string Message { get; set; }
         [Required]
         public DateTimeOffset Timestamp { get; set; }
+        [Required]
+        public bool Seen { get; set; }
     }
 }

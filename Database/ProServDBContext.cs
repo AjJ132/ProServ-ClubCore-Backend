@@ -28,7 +28,8 @@ namespace ProServ_ClubCore_Server_API.Database
         public virtual DbSet<DirectMessage> DirectMessages { get; set; }
         public virtual DbSet<GroupConversation> GroupConversations { get; set; }
         public virtual DbSet<ConversationUsers> ConversationUsers { get; set; }
-        public virtual DbSet<ConversationMessage> ConversationMessages { get; set; }
+        public virtual DbSet<GroupConversationMessage> GroupConversationMessages { get; set; }
+        public virtual DbSet<GroupConversationUserSeenStatus> GroupConversationUserSeenStatuses { get; set; }
 
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

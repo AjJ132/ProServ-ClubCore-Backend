@@ -3,13 +3,18 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace ProServ_ClubCore_Server_API.Models
 {
-    public class ConversationUsers
+    public class GroupConversationUserSeenStatus
     {
         [Key, DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-        public int ID { get; set; }
+        public int Id { get; set; }
+
         [Required]
-        public Guid Conversation_ID { get; set; }
-        [Required, MaxLength(450)]
+        public Guid GroupConversation_ID { get; set; }
+
+        [Required]
         public string User_ID { get; set; }
+
+        [Required]
+        public bool Seen { get; set; }
     }
 }

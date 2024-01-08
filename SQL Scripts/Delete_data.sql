@@ -1,7 +1,8 @@
 /*TRUNCATE TABLE "AspNetRoleClaims", "AspNetRoles", "AspNetUserClaims", "AspNetUserLogins", "AspNetUserRoles", "AspNetUserTokens", "AspNetUsers", "CalendarEvents", "Teams", "Users" CASCADE;
 
 */
-TRUNCATE TABLE "CalendarEvents" CASCADE;
+TRUNCATE TABLE "DirectConversations" CASCADE;
+TRUNCATE TABLE "GroupConversation" CASCADE;
 
 -- DO
 -- $$

@@ -273,5 +273,24 @@ namespace ProServ_ClubCore_Server_API.Controllers
                 return StatusCode(500, "Internal Server Error");
             }
         }
+
+        [HttpPost("remove-all-message-data")]
+        public async Task<IActionResult> RemoveAllMessageData()
+        {
+            try
+            {
+                using (var _context = await _contextFactory.CreateDbContextAsync())
+                {
+                    _context.Database.ExecuteSqlRaw("TRUNCATE TABLE\r\n  \"GroupConversationMessages\",\r\n  \"ConversationUsers\",\r\n  \"DirectConversations\",\r\n  \"DirectMessages\",\r\n  \"GroupConversations\",\r\n  \"GroupConversationUserSeenStatuses\"\r\nCASCADE;\r\n");
+                    await _context.SaveChangesAsync();
+
+                    return Ok("All message data removed");
+                }
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
+        }
     }
 }

@@ -150,38 +150,37 @@ namespace ProServ_ClubCore_Server_API.Controllers
                 //get conversations
                 using (var context = _contextFactory.CreateDbContext())
                 {
+                    List<UniversalConversations_DTO> universalConversations_DTO = new List<UniversalConversations_DTO>();
+
                     //get direct conversations
                     var directConversations = await context.DirectConversations.Where(dc => dc.User1_ID == currentUser.Id || dc.User2_ID == currentUser.Id).ToListAsync();
 
                     //get group conversations
-                    var groupConversations = await context.ConversationUsers.Where(cu => cu.User_ID == currentUser.Id).ToListAsync();
+                    //grab any if user was a creator
+                    var groupConversations = await context.GroupConversations.Where(gc => gc.Creator_ID == currentUser.Id).ToListAsync();
 
-                    //convert direct conversations to DTO
-                    var directConversations_DTO = new List<DirectConversation_DTO>();
+                    //next check conversation users to find all group messages they are apart of
+                    var gcUsersConversationIDs = await context.ConversationUsers.Where(cu => cu.User_ID == currentUser.Id).Select(cu => cu.Conversation_ID).ToListAsync();
+
+                    //get group conversations
+                    var groupConversations2 = await context.GroupConversations.Where(gc => gcUsersConversationIDs.Contains(gc.Conversation_ID)).ToListAsync();
+
+                    //merge group conversations remove duplicates
+                    groupConversations.AddRange(groupConversations2);
+
+                    //remove duplicates
+                    groupConversations = groupConversations.Distinct().ToList();
 
                     foreach (var conversation in directConversations)
                     {
-                        DirectConversation_DTO dCDTO = new DirectConversation_DTO();
+                        UniversalConversations_DTO dCDTO = new UniversalConversations_DTO();
                         dCDTO.Conversation_ID = conversation.Conversation_ID;
-                        dCDTO.Conversation_Type = "DIRECT";
+                        dCDTO.Conversation_Type = 0;
 
                         //get other user id. Where not equal to current user id
                         string otherUserId = conversation.User1_ID == currentUser.Id ? conversation.User2_ID : conversation.User1_ID;
 
-                        dCDTO.User2_ID = otherUserId;
-
-                        //get other user
-                        var otherUser = await context.Users.FirstOrDefaultAsync(u => u.User_ID == otherUserId);
-
-
-                        if (otherUser == null)
-                        {
-                            dCDTO.User2_Name = "UNKNOWN";
-                        }
-                        else
-                        {
-                            dCDTO.User2_Name = otherUser.First_Name + " " + otherUser.Last_Name;
-                        }
+                        dCDTO.Conversation_Title = await context.Users.Where(u => u.User_ID == otherUserId).Select(u => u.First_Name + " " + u.Last_Name).FirstOrDefaultAsync();
 
                         //get last message
                         var lastMessage = await context.DirectMessages.Where(dm => dm.Conversation_ID == conversation.Conversation_ID).OrderByDescending(dm => dm.Timestamp).FirstOrDefaultAsync();
@@ -204,16 +203,52 @@ namespace ProServ_ClubCore_Server_API.Controllers
                             dCDTO.hasUnreadMessages = lastMessage.Sender_ID != currentUser.Id && !lastMessage.Seen;
                         }
 
-                        directConversations_DTO.Add(dCDTO);
-
+                        //add to list
+                        universalConversations_DTO.Add(dCDTO);
                     }
 
-                    //convert group conversations to DTO //TODO
+                    //convert group conversations to DTO
+                    foreach(var conversation in groupConversations)
+                    {
+                        UniversalConversations_DTO gCDTO = new UniversalConversations_DTO();
+                        gCDTO.Conversation_Type = 1;
+                        gCDTO.Conversation_ID = conversation.Conversation_ID;
 
-                    return Ok(directConversations_DTO);
+                        //get group name
+                        gCDTO.Conversation_Title = conversation.Title;
+
+                        //get last message
+                        var lastMessage = await context.GroupConversationMessages.Where(gm => gm.Conversation_ID == conversation.Conversation_ID).OrderByDescending(gm => gm.Timestamp).FirstOrDefaultAsync();
+
+                        if (lastMessage == null)
+                        {
+                            gCDTO.LastMessageTimestamp = null;
+                        }
+                        else
+                        {
+                            gCDTO.LastMessageTimestamp = FormatTimestamp(lastMessage.Timestamp);
+                        }
+
+                        //check GroupConversationUserSeenStatus for seen status
+                        var seenStatus = await context.GroupConversationUserSeenStatuses.FirstOrDefaultAsync(gcuss => gcuss.GroupConversation_ID == conversation.Conversation_ID && gcuss.User_ID == currentUser.Id);
+
+                        if (seenStatus == null)
+                        {
+                            gCDTO.hasUnreadMessages = false;
+                        }
+                        else
+                        {
+                            gCDTO.hasUnreadMessages = !seenStatus.Seen;
+                        }
+
+                        //add to list
+                        universalConversations_DTO.Add(gCDTO);
+                    }
+
+                    return Ok(universalConversations_DTO);
                 }
-            
-                
+
+
             }
             catch (Exception ex)
             {
@@ -291,80 +326,117 @@ namespace ProServ_ClubCore_Server_API.Controllers
 
                 using (var context = _contextFactory.CreateDbContext())
                 {
-                    using (var transaction = context.Database.BeginTransaction()) //using transaction to ensure all changes are rolled back if an error occurs. Incase a group conversation is created but not all users are added
+                    GroupConversation_DTO groupConversation_DTO = null;
+
+                    var strategy = context.Database.CreateExecutionStrategy();
+                    _ = await strategy.ExecuteAsync(async () =>
                     {
-                        try
+                        using (var transaction = context.Database.BeginTransaction()) //using transaction to ensure all changes are rolled back if an error occurs. Incase a group conversation is created but not all users are added
                         {
-                            var creator = await context.Users.FirstOrDefaultAsync(u => u.User_ID == currentUser.Id);
-                            if (creator == null)
+                            try
                             {
-                                return Unauthorized("User was not found");
-                            }
-
-                            if (newGC_DTO.GroupName == null || newGC_DTO.GroupName == "")
-                            {
-                                return BadRequest("Group name was not provided");
-                            }
-
-                            var newGroupConversation = new GroupConversation
-                            {
-                                Conversation_ID = Guid.NewGuid(),
-                                Title = newGC_DTO.GroupName,
-                                Date_Created = DateTimeOffset.UtcNow,
-                                Creator_ID = currentUser.Id,
-                                Group_Type = 1 // Assuming this is your business logic
-                            };
-
-                            await context.GroupConversations.AddAsync(newGroupConversation);
-
-                            List<ConversationUsers> conversationUsers = new List<ConversationUsers>();
-                            foreach (var userID in newGC_DTO.User_IDs)
-                            {
-                                var user = await context.Users.FirstOrDefaultAsync(u => u.User_ID == userID);
-                                if (user == null)
+                                var creator = await context.Users.FirstOrDefaultAsync(u => u.User_ID == currentUser.Id);
+                                if (creator == null)
                                 {
-                                    throw new Exception("User not found in database");
+                                    throw new Exception("Creator not found in database");
                                 }
 
-                                if (user.Team_ID != creator.Team_ID)
+                                if (newGC_DTO.GroupName == null || newGC_DTO.GroupName == "")
                                 {
-                                    throw new Exception("User not in the same team as creator");
+                                    throw new Exception("Group name cannot be empty");
                                 }
 
-                                conversationUsers.Add(new ConversationUsers
+                                var newGroupConversation = new GroupConversation
+                                {
+                                    Conversation_ID = Guid.NewGuid(),
+                                    Title = newGC_DTO.GroupName,
+                                    Date_Created = DateTimeOffset.UtcNow,
+                                    Creator_ID = currentUser.Id,
+                                    Group_Type = 1 // Assuming this is your business logic
+                                };
+
+                                await context.GroupConversations.AddAsync(newGroupConversation);
+
+                                Dictionary<string, ConversationUsers> userKVP = new Dictionary<string, ConversationUsers>();
+                                List<GroupConversationUserSeenStatus> groupConversationUserSeenStatuses = new List<GroupConversationUserSeenStatus>();
+                                foreach (var userID in newGC_DTO.User_IDs)
+                                {
+                                    var user = await context.Users.FirstOrDefaultAsync(u => u.User_ID == userID);
+                                    if (user == null)
+                                    {
+                                        throw new Exception("User not found in database");
+                                    }
+
+                                    if (user.Team_ID != creator.Team_ID)
+                                    {
+                                        throw new Exception("User not in the same team as creator");
+                                    }
+
+                                    var conversationUser = new ConversationUsers
+                                    {
+                                        Conversation_ID = newGroupConversation.Conversation_ID,
+                                        User_ID = userID
+                                    };
+
+                                    userKVP.Add(user.First_Name + " " + user.Last_Name, conversationUser);
+
+                                    //create new entity in GroupConversationUserSeenStatus
+                                    var groupConversationUserSeenStatus = new GroupConversationUserSeenStatus
+                                    {
+                                        GroupConversation_ID = newGroupConversation.Conversation_ID,
+                                        User_ID = userID,
+                                        Seen = true
+                                    };
+
+                                    groupConversationUserSeenStatuses.Add(groupConversationUserSeenStatus);
+                                }
+
+                                await context.GroupConversationUserSeenStatuses.AddRangeAsync(groupConversationUserSeenStatuses);
+                                await context.ConversationUsers.AddRangeAsync(userKVP.Values);
+                                await context.SaveChangesAsync();
+
+                                groupConversation_DTO = new GroupConversation_DTO
                                 {
                                     Conversation_ID = newGroupConversation.Conversation_ID,
-                                    User_ID = userID
-                                });
+                                    Conversation_Type = 1,
+                                    Creator_Name = creator.First_Name + " " + creator.Last_Name,
+                                    GroupName = newGroupConversation.Title,
+                                    LastMessageTimestamp = null,
+                                    hasUnreadMessages = false,
+                                    Users = new Dictionary<string, string>()
+                                };
+
+                                transaction.Commit(); //important to commit changes to database
+                       
+                                foreach (var user in userKVP)
+                                {
+                                    groupConversation_DTO.Users.Add(user.Key, user.Value.User_ID);
+                                }
+
+                                return Ok(groupConversation_DTO);
                             }
-
-                            await context.ConversationUsers.AddRangeAsync(conversationUsers);
-                            await context.SaveChangesAsync(); 
-                            await transaction.CommitAsync(); //important to commit changes to database
-
-                            GroupConversation_DTO groupConversation_DTO = new GroupConversation_DTO
+                            catch (Exception ex)
                             {
-                                Conversation_ID = newGroupConversation.Conversation_ID,
-                                Conversation_Type = 1,
-                                Creator_Name = creator.First_Name + " " + creator.Last_Name,
-                                GroupName = newGroupConversation.Title,
-                                LastMessageTimestamp = null,
-                                hasUnreadMessages = false
-                            };
+                                await transaction.RollbackAsync(); //important to rollback if exception occurs and remove database clutter
+                                throw ex;
+                            }
+                        }
+                    });
 
-                            return Ok(groupConversation_DTO);
-                        }
-                        catch (Exception ex)
-                        {
-                            await transaction.RollbackAsync(); //important to rollback if exception occurs and remove database clutter
-                            return BadRequest(ex.Message);
-                        }
+                    if (groupConversation_DTO != null)
+                    {
+                        return Ok(groupConversation_DTO);
+                    }
+                    else
+                    {
+                        return BadRequest("An error occurred while creating the group conversation");
                     }
                 }
 
             }
             catch (Exception ex)
             {
+                Console.WriteLine(ex.Message);
                 return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
             }
         }   
@@ -534,6 +606,34 @@ namespace ProServ_ClubCore_Server_API.Controllers
             catch (Exception ex)
             {
                 return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+            }
+        }
+
+        [HttpGet("Group/{conversationID}/messages")]
+        [Authorize]
+        public async Task<IActionResult> GetMessagesForGroupMessageThread([FromQuery] Guid conversationID, [FromQuery] int pageIndex = 1, [FromQuery] int pageSize = 20)
+        {
+            try
+            {
+                //get current user
+                var currentUser = await _userManager.GetUserAsync(User);
+
+                if (currentUser == null)
+                {
+                    return Unauthorized("User was not found");
+                }
+
+                //get group conversation
+                using (var context = _contextFactory.CreateDbContext())
+                {
+                    //TODO implement 
+                }
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+            }
+
             }
         }
     }
