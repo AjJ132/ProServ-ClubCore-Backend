@@ -28,17 +28,17 @@ namespace ProServ_ClubCore_Server_API.Controllers
             {
                 var identUser = await _userManager.GetUserAsync(User);
 
-                if(identUser == null)
+                if (identUser == null)
                 {
                     return Unauthorized("User does not exist");
                 }
 
-                using(var db = _contextFactory.CreateDbContext())
+                using (var db = _contextFactory.CreateDbContext())
                 {
                     var user = await db.Users.FirstOrDefaultAsync(u => u.User_ID == identUser.Id);
                     var team = await db.Teams.FirstOrDefaultAsync(t => t.Team_ID == user.Team_ID);
 
-                    if(team == null)
+                    if (team == null)
                     {
                         return BadRequest("Team does not exist");
                     }
@@ -66,17 +66,17 @@ namespace ProServ_ClubCore_Server_API.Controllers
             {
                 var identUser = await _userManager.GetUserAsync(User);
 
-                if(identUser == null)
+                if (identUser == null)
                 {
                     return Unauthorized("User does not exist");
                 }
 
-                using(var db = _contextFactory.CreateDbContext())
+                using (var db = _contextFactory.CreateDbContext())
                 {
                     var user = await db.Users.FirstOrDefaultAsync(u => u.User_ID == identUser.Id);
                     var team = await db.Teams.FirstOrDefaultAsync(t => t.Team_ID == user.Team_ID);
 
-                    if(team == null)
+                    if (team == null)
                     {
                         return BadRequest("Team does not exist");
                     }
@@ -93,7 +93,7 @@ namespace ProServ_ClubCore_Server_API.Controllers
             {
                 return StatusCode(500, $"Internal server error: {ex}");
             }
-        }   
+        }
 
         [HttpGet("team-lookup")]
         [Authorize]
@@ -101,7 +101,7 @@ namespace ProServ_ClubCore_Server_API.Controllers
         {
             try
             {
-                using(var db = _contextFactory.CreateDbContext())
+                using (var db = _contextFactory.CreateDbContext())
                 {
                     Team_Lookup_DTO team = await db.Teams
                         .Where(t => t.Team_Join_Code == team_code.Team_Join_Code)
@@ -112,7 +112,7 @@ namespace ProServ_ClubCore_Server_API.Controllers
                         })
                         .FirstOrDefaultAsync();
 
-                    if(team == null)
+                    if (team == null)
                     {
                         return NotFound("Team does not exist");
                     }
@@ -132,25 +132,25 @@ namespace ProServ_ClubCore_Server_API.Controllers
         {
             try
             {
-                using(var db = _contextFactory.CreateDbContext())
+                using (var db = _contextFactory.CreateDbContext())
                 {
                     var user = await _userManager.GetUserAsync(User);
 
-                    if(user == null)
+                    if (user == null)
                     {
                         return Unauthorized("User does not exist");
                     }
 
                     var team = await db.Teams.FirstOrDefaultAsync(t => t.Team_Join_Code == team_code.Team_Join_Code);
 
-                    if(team == null)
+                    if (team == null)
                     {
                         return NotFound("Team does not exist");
                     }
 
                     var userToUpdate = await db.Users.FirstOrDefaultAsync(u => u.User_ID == user.Id);
 
-                    if(userToUpdate == null)
+                    if (userToUpdate == null)
                     {
                         return BadRequest("could not find user. ERROR 3000!!");
                     }
@@ -168,6 +168,6 @@ namespace ProServ_ClubCore_Server_API.Controllers
             }
         }
 
-        
+
     }
 }

@@ -120,13 +120,13 @@ namespace ProServ_ClubCore_Server_API.Controllers
                     return Unauthorized("User was not found");
                 }
 
-                
+
                 using (var context = _contextFactory.CreateDbContext())
                 {
                     //get curent user
                     var currentUserEntity = await context.Users.FirstOrDefaultAsync(u => u.User_ID == currentUser.Id);
 
-                    if(currentUserEntity == null)
+                    if (currentUserEntity == null)
                     {
                         return Unauthorized("User was not found");
                     }
@@ -240,7 +240,7 @@ namespace ProServ_ClubCore_Server_API.Controllers
                     }
 
                     //convert group conversations to DTO
-                    foreach(var conversation in groupConversations)
+                    foreach (var conversation in groupConversations)
                     {
                         UniversalConversations_DTO gCDTO = new UniversalConversations_DTO();
                         gCDTO.Conversation_Type = 1;
@@ -281,6 +281,103 @@ namespace ProServ_ClubCore_Server_API.Controllers
                 }
 
 
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+            }
+        }
+
+        [HttpGet("get-conversation-members")]
+        [Authorize]
+        public async Task<IActionResult> GetConversationUsers([FromQuery] Guid conversationID, [FromQuery] int conversationType)
+        {
+            try
+            {
+                //get current user
+                var currentUser = await _userManager.GetUserAsync(User);
+
+                if (currentUser == null)
+                {
+                    return Unauthorized("User was not found");
+                }
+
+                using (var context = _contextFactory.CreateDbContext())
+                {
+                    if (conversationType == 0)
+                    {
+                        //get direct conversation users
+                        var directConversation = await context.DirectConversations.FirstOrDefaultAsync(dc => dc.Conversation_ID == conversationID);
+
+                        if (directConversation == null)
+                        {
+                            return BadRequest("Direct conversation was not found");
+                        }
+
+                        var user1 = await context.Users.FirstOrDefaultAsync(u => u.User_ID == directConversation.User1_ID);
+                        var user2 = await context.Users.FirstOrDefaultAsync(u => u.User_ID == directConversation.User2_ID);
+
+                        if (user1 == null || user2 == null)
+                        {
+                            return BadRequest("One or more users were not found");
+                        }
+
+                        List<UserLookup_DTO> users =
+                        [
+                            new UserLookup_DTO
+                            {
+                                User_ID = user1.User_ID,
+                                Name = user1.First_Name + " " + user1.Last_Name
+                            },
+                            new UserLookup_DTO
+                            {
+                                User_ID = user2.User_ID,
+                                Name = user2.First_Name + " " + user2.Last_Name
+                            },
+                        ];
+
+                        return Ok(users);
+                    }
+                    else if (conversationType == 1)
+                    {
+                        //get group conversation users
+                        var groupConversation = await context.GroupConversations.FirstOrDefaultAsync(gc => gc.Conversation_ID == conversationID);
+
+
+                        if (groupConversation == null)
+                        {
+                            return BadRequest("Group conversation was not found");
+                        }
+
+                        //get all users in group conversation
+                        var groupConversationUsers = await context.ConversationUsers.Where(cu => cu.Conversation_ID == conversationID).ToListAsync();
+
+                        //convert to DTO
+                        List<UserLookup_DTO> users = new List<UserLookup_DTO>();
+
+                        foreach (var user in groupConversationUsers)
+                        {
+                            var userEntity = await context.Users.FirstOrDefaultAsync(u => u.User_ID == user.User_ID);
+
+                            if (userEntity == null)
+                            {
+                                continue; //skip user, TODO log error
+                            }
+
+                            users.Add(new UserLookup_DTO
+                            {
+                                User_ID = userEntity.User_ID,
+                                Name = userEntity.First_Name + " " + userEntity.Last_Name
+                            });
+                        }
+
+                        return Ok(users);
+                    }
+                    else
+                    {
+                        return BadRequest("Invalid conversation type");
+                    }
+                }
             }
             catch (Exception ex)
             {
@@ -458,7 +555,7 @@ namespace ProServ_ClubCore_Server_API.Controllers
                                 };
 
                                 transaction.Commit(); //important to commit changes to database
-                       
+
                                 foreach (var user in userKVP)
                                 {
                                     groupConversation_DTO.Users.Add(user.Key, user.Value.User_ID);
@@ -490,14 +587,14 @@ namespace ProServ_ClubCore_Server_API.Controllers
                 Console.WriteLine(ex.Message);
                 return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
             }
-        }   
+        }
 
         //get my message threads
 
         //get messages for a direct conversation
         [HttpGet("Direct/{conversationID}/messages")]
         [Authorize]
-        public async Task<IActionResult> GetMessagesForDirectMessageThread([FromQuery]Guid conversationID, [FromQuery]int pageIndex = 1, [FromQuery] int pageSize = 20)
+        public async Task<IActionResult> GetMessagesForDirectMessageThread([FromQuery] Guid conversationID, [FromQuery] int pageIndex = 1, [FromQuery] int pageSize = 20)
         {
             try
             {
@@ -540,7 +637,7 @@ namespace ProServ_ClubCore_Server_API.Controllers
                             Message = message.Message,
                             Timestamp = message.Timestamp,
                             Seen = message.Seen
-                            
+
                         });
                     }
 
@@ -566,7 +663,7 @@ namespace ProServ_ClubCore_Server_API.Controllers
 
                 if (currentUser == null)
                 {
-                       return Unauthorized("User was not found");
+                    return Unauthorized("User was not found");
                 }
 
                 //get direct conversation
@@ -817,7 +914,7 @@ namespace ProServ_ClubCore_Server_API.Controllers
                     {
                         return Unauthorized("You are not part of this group conversation");
                     }
-                    
+
                     //get GroupConversationUserSeenStatus
                     var groupConversationUserSeenStatus = await context.GroupConversationUserSeenStatuses.FirstOrDefaultAsync(gcuss => gcuss.GroupConversation_ID == conversationID && gcuss.User_ID == currentUser.Id);
 
@@ -840,10 +937,10 @@ namespace ProServ_ClubCore_Server_API.Controllers
                 return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
             }
         }
-    
-    
-    
-    
+
+
+
+
     }
 }
 

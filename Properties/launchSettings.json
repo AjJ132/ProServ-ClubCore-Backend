@@ -11,7 +11,7 @@
   "profiles": {
     "https": {
       "commandName": "Project",
-      "launchBrowser": false,
+      "launchBrowser": true,
       "launchUrl": "swagger",
       "applicationUrl": "https://localhost:7071",
       "environmentVariables": {
