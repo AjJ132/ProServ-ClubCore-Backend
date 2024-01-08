@@ -52,6 +52,16 @@
         public Dictionary<string, string>? Users { get; set; }
     }
 
+    public class GroupMessage_DTO
+    {
+        public Guid? Conversation_ID { get; set; }
+        public string Sender_ID { get; set; }
+        public string? Sender_Name { get; set; }
+        public string Message { get; set; }
+        public DateTimeOffset Timestamp { get; set; }
+        public bool? Seen { get; set; }
+    }
+
     public class UserLookup_DTO
     {
         public string User_ID { get; set; }

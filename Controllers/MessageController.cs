@@ -22,7 +22,7 @@ namespace ProServ_ClubCore_Server_API.Controllers
             _contextFactory = contextFactory;
         }
 
-        private async Task<bool> ValidateUserConversationAccess(Guid conversationId, string userId)
+        private async Task<bool> ValidateUserDirectConversationAccess(Guid conversationId, string userId)
         {
             try
             {
@@ -32,10 +32,42 @@ namespace ProServ_ClubCore_Server_API.Controllers
 
                     if (conversation == null)
                     {
+
                         return false;
                     }
 
                     if (conversation.User1_ID != userId && conversation.User2_ID != userId)
+                    {
+                        return false;
+                    }
+
+                    return true;
+                }
+            }
+            catch (Exception ex)
+            {
+                //TODO log error
+                return false;
+            }
+        }
+
+        private async Task<bool> ValidateUserGroupConversationAccess(Guid conversationId, string userId)
+        {
+            try
+            {
+                using (var context = _contextFactory.CreateDbContext())
+                {
+                    var conversation = await context.GroupConversations.FirstOrDefaultAsync(gc => gc.Conversation_ID == conversationId);
+
+                    if (conversation == null)
+                    {
+                        return false;
+                    }
+
+                    //validate user is part of group conversation
+                    var userInGroupConversation = await context.ConversationUsers.FirstOrDefaultAsync(cu => cu.Conversation_ID == conversationId && cu.User_ID == userId);
+
+                    if (userInGroupConversation == null)
                     {
                         return false;
                     }
@@ -391,6 +423,25 @@ namespace ProServ_ClubCore_Server_API.Controllers
                                     groupConversationUserSeenStatuses.Add(groupConversationUserSeenStatus);
                                 }
 
+                                //add creator to conversation users list
+                                var creatorConversationUser = new ConversationUsers
+                                {
+                                    Conversation_ID = newGroupConversation.Conversation_ID,
+                                    User_ID = currentUser.Id
+                                };
+
+                                userKVP.Add(creator.First_Name + " " + creator.Last_Name, creatorConversationUser);
+
+                                //add creator to GroupConversationUserSeenStatus
+                                var creatorGroupConversationUserSeenStatus = new GroupConversationUserSeenStatus
+                                {
+                                    GroupConversation_ID = newGroupConversation.Conversation_ID,
+                                    User_ID = currentUser.Id,
+                                    Seen = true
+                                };
+
+                                groupConversationUserSeenStatuses.Add(creatorGroupConversationUserSeenStatus);
+
                                 await context.GroupConversationUserSeenStatuses.AddRangeAsync(groupConversationUserSeenStatuses);
                                 await context.ConversationUsers.AddRangeAsync(userKVP.Values);
                                 await context.SaveChangesAsync();
@@ -462,7 +513,7 @@ namespace ProServ_ClubCore_Server_API.Controllers
                 using (var context = _contextFactory.CreateDbContext())
                 {
 
-                    bool valid = await ValidateUserConversationAccess(conversationID, currentUser.Id);
+                    bool valid = await ValidateUserDirectConversationAccess(conversationID, currentUser.Id);
 
                     if (!valid)
                     {
@@ -521,7 +572,7 @@ namespace ProServ_ClubCore_Server_API.Controllers
                 //get direct conversation
                 using (var context = _contextFactory.CreateDbContext())
                 {
-                    bool valid = await ValidateUserConversationAccess(conversationID, currentUser.Id);
+                    bool valid = await ValidateUserDirectConversationAccess(conversationID, currentUser.Id);
 
                     if (!valid)
                     {
@@ -583,7 +634,7 @@ namespace ProServ_ClubCore_Server_API.Controllers
                 //get direct conversation
                 using (var context = _contextFactory.CreateDbContext())
                 {
-                    bool valid = await ValidateUserConversationAccess(conversationID, currentUser.Id);
+                    bool valid = await ValidateUserDirectConversationAccess(conversationID, currentUser.Id);
 
                     if (!valid)
                     {
@@ -626,15 +677,173 @@ namespace ProServ_ClubCore_Server_API.Controllers
                 //get group conversation
                 using (var context = _contextFactory.CreateDbContext())
                 {
-                    //TODO implement 
+                    //check if user is part of group conversation
+                    var validAccess = await ValidateUserGroupConversationAccess(conversationID, currentUser.Id);
+
+                    if (!validAccess)
+                    {
+                        return Unauthorized("You are not part of this group conversation");
+                    }
+
+                    //get group conversation
+                    var groupConversation = await context.GroupConversations.FirstOrDefaultAsync(gc => gc.Conversation_ID == conversationID);
+
+                    //get messages for group conversation
+                    var messages = await context.GroupConversationMessages.Where(gcm => gcm.Conversation_ID == conversationID).OrderByDescending(gcm => gcm.Timestamp).ToListAsync();
+
+                    //convert messages to DTO
+                    var messages_DTO = new List<GroupMessage_DTO>();
+
+                    foreach (var message in messages)
+                    {
+                        var sender = await context.Users.FirstOrDefaultAsync(u => u.User_ID == message.Sender_ID);
+
+                        messages_DTO.Add(new GroupMessage_DTO
+                        {
+                            Conversation_ID = message.Conversation_ID,
+                            Sender_ID = message.Sender_ID,
+                            Sender_Name = sender.First_Name + " " + sender.Last_Name,
+                            Message = message.Message,
+                            Timestamp = message.Timestamp
+                        });
+                    }
+
+                    return Ok(messages_DTO);
                 }
             }
             catch (Exception ex)
             {
                 return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
             }
+        }
 
+
+        [HttpPost("Group/{conversationID}/send-message")]
+        [Authorize]
+        public async Task<IActionResult> SendMessageToGroupThread([FromQuery] Guid conversationID, [FromBody] string message)
+        {
+            try
+            {
+                //get current user
+                var currentUser = await _userManager.GetUserAsync(User);
+
+                if (currentUser == null)
+                {
+                    return Unauthorized("User was not found");
+                }
+
+                //get group conversation
+                using (var context = _contextFactory.CreateDbContext())
+                {
+                    //check if user is part of group conversation
+                    var validAccess = await ValidateUserGroupConversationAccess(conversationID, currentUser.Id);
+
+                    if (!validAccess)
+                    {
+                        return Unauthorized("You are not part of this group conversation");
+                    }
+
+                    //get group conversation
+                    var groupConversation = await context.GroupConversations.FirstOrDefaultAsync(gc => gc.Conversation_ID == conversationID);
+
+                    //create new group message
+                    var newGroupMessage = new GroupConversationMessage
+                    {
+                        Conversation_ID = conversationID,
+                        Sender_ID = currentUser.Id,
+                        Message = message,
+                        Timestamp = DateTimeOffset.UtcNow
+                    };
+
+                    //find and update GroupConversationUserSeenStatus
+                    //get all users in group conversation
+                    var groupConversationUsers = await context.GroupConversationUserSeenStatuses.Where(gcuss => gcuss.GroupConversation_ID == conversationID).ToListAsync();
+
+                    //remove current user from list
+                    groupConversationUsers.RemoveAll(cu => cu.User_ID == currentUser.Id);
+
+
+                    //update seen status
+                    groupConversationUsers.ForEach(gcuss => gcuss.Seen = false);
+
+                    //save new group message
+                    await context.GroupConversationMessages.AddAsync(newGroupMessage);
+                    await context.SaveChangesAsync();
+
+                    var sender = await context.Users.FirstOrDefaultAsync(u => u.User_ID == currentUser.Id);
+
+                    var newMessage = new GroupMessage_DTO
+                    {
+                        Conversation_ID = conversationID,
+                        Sender_ID = currentUser.Id,
+                        Sender_Name = sender.First_Name + " " + sender.Last_Name,
+                        Message = message,
+                        Timestamp = newGroupMessage.Timestamp
+                    };
+
+                    //send message to all clients in the conversation
+                    //TODO send message to WEBSOCKET connections
+
+                    return Ok(newMessage);
+                }
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
             }
         }
+
+        [HttpPut("Group/{conversation_ID}/mark-as-seen")]
+        [Authorize]
+        public async Task<IActionResult> MarkGroupConversationAsSeen([FromQuery] Guid conversationID)
+        {
+            try
+            {
+                //get current user
+                var currentUser = await _userManager.GetUserAsync(User);
+
+                if (currentUser == null)
+                {
+                    return Unauthorized("User was not found");
+                }
+
+                //get group conversation
+                using (var context = _contextFactory.CreateDbContext())
+                {
+                    //check if user is part of group conversation
+                    var validAccess = await ValidateUserGroupConversationAccess(conversationID, currentUser.Id);
+
+                    if (!validAccess)
+                    {
+                        return Unauthorized("You are not part of this group conversation");
+                    }
+                    
+                    //get GroupConversationUserSeenStatus
+                    var groupConversationUserSeenStatus = await context.GroupConversationUserSeenStatuses.FirstOrDefaultAsync(gcuss => gcuss.GroupConversation_ID == conversationID && gcuss.User_ID == currentUser.Id);
+
+                    if (groupConversationUserSeenStatus == null)
+                    {
+                        return Ok("There was an error marking the group conversation as seen");
+                    }
+
+                    //update seen status
+                    groupConversationUserSeenStatus.Seen = true;
+
+                    //save changes
+                    await context.SaveChangesAsync();
+
+                    return Ok();
+                }
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+            }
+        }
+    
+    
+    
+    
     }
 }
+
